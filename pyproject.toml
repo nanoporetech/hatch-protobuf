@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hatch-protobuf"
+dynamic = ["version"]
+description = "A Hatch build plugin to generate Python files from Protocol Buffers .proto files"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MPL-2.0"
+authors = [
+    {name = "Oxford Nanopore Technologies PLC", email = "info@nanoporetech.com"},
+]
+keywords = [
+    "hatch",
+    "protobuf",
+    "grpc",
+]
+classifiers = [
+    "Framework :: Hatch",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "grpcio-tools~=1.49",  # 1.49+ is required for .pyi output
+    "hatchling",
+]
+
+[project.urls]
+"Source code" = "https://github.com/nanoporetech/hatch-protobuf"
+
+[project.entry-points.hatch]
+protobuf = "hatch_protobuf.hooks"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/hatch_protobuf/_version.py"
+dependencies = [
+    "hatch-vcs",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "hatch",
+  "pytest",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest -vv {args:tests}"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+target-version = ["py38", "py39", "py310", "py311", "py312"]

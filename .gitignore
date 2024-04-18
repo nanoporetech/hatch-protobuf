@@ -1,0 +1,19 @@
+# IDEs and editors
+.*.swp
+*.kate-swp
+*~
+.vscode/
+/.vs/
+.DS_Store
+._.DS_Store
+
+# Python
+.*_cache
+__pycache__
+dist/
+*.egg-info/
+*.venv
+*.whl
+
+# Project-specific
+_version.py
