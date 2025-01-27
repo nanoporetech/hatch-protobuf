@@ -19,7 +19,8 @@ section:
 | --- | ------- | ----------- |
 | `generate_grpc` | `true` | Whether to generate gRPC output files. |
 | `generate_pyi` | `true` | Whether to generate .pyi output files. Note that these are not generated for the gRPC output. You may want to use mypy-protobuf instead. |
-| `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. |
+| `import_site_packages` | `false` | Adds your Python `site-packages` directory to `--proto_path`, so you can [`import` `.proto` files from installed Python packages](#include-proto-files-from-site-packages). This *does not* add individual `.proto` files in `site-packages` as arguments to `protoc`. |
+| `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. This does not follow symlinks. |
 | `output_path` | `"."` or `"src"` | The default output directory. This can be overridden on a per-generator basis for custom generators. |
 
 Hatch-protobuf will guess whether to use "src" as the default input/output directory in
@@ -73,3 +74,82 @@ outputs = ["{proto_path}/{proto_name}_pb2.pyi"]
 name = "mypy_grpc"
 outputs = ["{proto_path}/{proto_name}_pb2_grpc.pyi"]
 ```
+
+### Import `.proto` files from `site-packages`
+
+Setting `include_site_packages = true` causes the plugin to add your current
+`site-packages` directory as a `--proto_path` when running `protoc`, *without*
+trying to build a `_pb2.py` for *every* `.proto` file.
+
+This allows your package to consume Protocol Buffer definitions from published
+Python packages which include both `.proto` and `_pb2.py` files.
+
+As an example, consider a gRPC service definition which includes a Protocol
+Buffer message definiton from
+[Google API common protos](https://github.com/googleapis/googleapis/tree/master/google/api):
+
+```proto
+// proto/example/v1/example.proto
+syntax = "proto3";
+
+package example.v1;
+
+import "google/api/annotations.proto";
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello(HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      get: "/say"
+    };
+  }
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+```
+
+In this case, the
+[`googleapis-common-protos` package](https://pypi.org/project/googleapis-common-protos/)
+contains `annotations.proto` and a pre-built version of `annotations_pb2.py`,
+which is normally installed in a directory tree layout which can be used by
+*both* Python and `protoc`:
+
+```
+site-packages/google/api/
+├── annotations_pb2.py
+├── annotations.proto
+├── auth_pb2.py
+├── auth.proto
+...
+```
+
+Setting `include_site_packages = true` makes your generated code contain imports
+that reference the already-built bindings, and not rebuild them:
+
+```python
+# example/v1/example_pb2.py
+from google.api import annotations_pb2 as google_dot_api_dot_annotations__pb2
+```
+
+If you had added the directory containing `google/api/annotations.proto` to this
+plugin's `proto_paths` option, this would cause it to re-build Python files for
+*all* `.proto` files in that directory, not just the things used for your
+package, and stomp all over your `site-packages` directory.
+
+> [!NOTE]
+> You can only `import` Protocol Buffer definitions in `.proto` files from
+> *non-editable* dependencies (ie: from ordinary packages published on PyPI or
+> private registries).
+>
+> *Editable* dependencies (eg: installed with `pip install -e` or using
+> [`uv` workspaces](https://docs.astral.sh/uv/concepts/projects/dependencies/#editable-dependencies))
+> use a different directory layout which can't be imported from by `protoc`.
