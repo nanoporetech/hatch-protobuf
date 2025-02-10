@@ -50,6 +50,9 @@ class ProtocHook(BuildHookInterface):
         for generator in self._generators:
             args.append(f"--{generator.name}_out={generator.output_path}")
 
+        for include in self._includes:
+            args.append(f"-I{include}")
+
         args += [str(p) for p in self._files.inputs]  # cast to str for debug output
 
         self.app.display_debug(f"Running {shlex.join(args)}")
@@ -68,6 +71,10 @@ class ProtocHook(BuildHookInterface):
     @cached_property
     def _root_path(self) -> Path:
         return Path(self.root)
+
+    @cached_property
+    def _includes(self) -> List[str]:
+        return self.config.get("includes", [])
 
     @cached_property
     def _default_proto_path(self) -> str:
