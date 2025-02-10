@@ -21,6 +21,7 @@ section:
 | `generate_pyi` | `true` | Whether to generate .pyi output files. Note that these are not generated for the gRPC output. You may want to use mypy-protobuf instead. |
 | `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. |
 | `output_path` | `"."` or `"src"` | The default output directory. This can be overridden on a per-generator basis for custom generators. |
+| `includes` | `[]` | Additional include directories to pass to `protoc` via `-I` flag. |
 
 Hatch-protobuf will guess whether to use "src" as the default input/output directory in
 a similar way to the [wheel builder][wheel-builder-defaults]. If
