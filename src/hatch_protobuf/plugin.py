@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
+from sysconfig import get_path
 from typing import Any, Dict, List
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
@@ -47,6 +48,9 @@ class ProtocHook(BuildHookInterface):
         for path in self._proto_paths:
             args.append("--proto_path")
             args.append(path)
+        if self.config.get("import_site_packages", False):
+            args.append("--proto_path")
+            args.append(get_path("purelib"))
         for generator in self._generators:
             args.append(f"--{generator.name}_out={generator.output_path}")
 
