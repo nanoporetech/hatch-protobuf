@@ -27,6 +27,7 @@ class Generator:
     This is useful for plugins that are not installed in the Python environment."""
     protoc_plugin: Optional[Path] = None
 
+
 @dataclass
 class Files:
     inputs: List[Path]
@@ -56,7 +57,9 @@ class ProtocHook(BuildHookInterface):
             args.append(get_path("purelib"))
         for generator in self._generators:
             if generator.protoc_plugin:
-                args.append(f"--plugin=protoc-gen-{generator.name}={generator.protoc_plugin}")
+                args.append(
+                    f"--plugin=protoc-gen-{generator.name}={generator.protoc_plugin}"
+                )
             args.append(f"--{generator.name}_out={generator.output_path}")
 
         args += [str(p) for p in self._files.inputs]  # cast to str for debug output
