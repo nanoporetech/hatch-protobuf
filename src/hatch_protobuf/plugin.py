@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from sysconfig import get_path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
@@ -22,6 +22,10 @@ class Generator:
 
     """Where to write output files."""
     output_path: Path
+
+    """The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc.
+    This is useful for plugins that are not installed in the Python environment."""
+    protoc_plugin: Optional[Path] = None
 
 
 @dataclass
@@ -52,6 +56,10 @@ class ProtocHook(BuildHookInterface):
             args.append("--proto_path")
             args.append(get_path("purelib"))
         for generator in self._generators:
+            if generator.protoc_plugin:
+                args.append(
+                    f"--plugin=protoc-gen-{generator.name}={generator.protoc_plugin}"
+                )
             args.append(f"--{generator.name}_out={generator.output_path}")
 
         args += [str(p) for p in self._files.inputs]  # cast to str for debug output
@@ -128,6 +136,7 @@ class ProtocHook(BuildHookInterface):
                     name=g["name"],
                     outputs=g["outputs"],
                     output_path=Path(g.get("output_path", output_path)),
+                    protoc_plugin=g.get("protoc_plugin", None),
                 )
             )
 

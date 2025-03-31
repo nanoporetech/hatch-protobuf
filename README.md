@@ -36,7 +36,8 @@ default for both.
 If you want to use custom generators (not just the python, gRPC and pyi ones built in to
 the version of protoc that ships with grpcio-tools), you can add them in
 `[[tool.hatch.build.hooks.protobuf.generators]]` sections. You will also need to add the
-plugin to the list of dependencies. See the "Mypy output" section below for an example.
+plugin to the list of dependencies.
+
 Options that can be set in generator sections:
 
 | Key | Default | Description |
@@ -44,6 +45,7 @@ Options that can be set in generator sections:
 | `name` | required | The name of the plugin. The argument passed to protoc will be `--<name>_out`. |
 | `outputs` | required | A list of paths (relative to `output_path`). See below for more information. |
 | `output_path` | same as `output_path` from the main `protobuf` config section | Where to write generated files to. This is the value passed to the `--<name>_out` argument. |
+| `protoc_plugin` | `None` | The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc. This is useful for plugins that are not installed in the Python environment. |
 
 Each entry in the `outputs` field is a template that depends on the `.proto` file being
 processed. The string `{proto_name}` will be replaced with the base filename of each input .proto
@@ -51,6 +53,16 @@ file, and `{proto_path}` will be replaced with the path (relative to the proto_p
 the input proto files. For example, if `proto_paths` is set to `["src"]`, for the
 input file `src/foo/bar/test.proto` "{proto_name}" will expand to "test" and
 "{proto_path}" will expand to "foo/bar".
+
+Here is an example using the TypeScript generator:
+
+```
+[[tool.hatch.build.hooks.protobuf.generators]]
+name = "ts"
+outputs = ["{proto_path}/{proto_name}.ts"]
+output_path = "./frontend/src"
+protoc_plugin = "./frontend/node_modules/.bin/protoc-gen-ts_proto"
+```
 
 ### Mypy output
 
