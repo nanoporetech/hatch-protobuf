@@ -22,6 +22,7 @@ section:
 | `import_site_packages` | `false` | Adds your Python `site-packages` directory to `--proto_path`, so you can [`import` `.proto` files from installed Python packages](#include-proto-files-from-site-packages). This *does not* add individual `.proto` files in `site-packages` as arguments to `protoc`. |
 | `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. This does not follow symlinks. |
 | `output_path` | `"."` or `"src"` | The default output directory. This can be overridden on a per-generator basis for custom generators. |
+| `includes` | `[]` | Additional include directories to pass to `protoc` via `-I` flag. |
 
 Hatch-protobuf will guess whether to use "src" as the default input/output directory in
 a similar way to the [wheel builder][wheel-builder-defaults]. If
