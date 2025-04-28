@@ -25,13 +25,47 @@ class Generator:
 
     """The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc.
     This is useful for plugins that are not installed in the Python environment."""
-    protoc_plugin: Optional[Path] = None
+    protoc_plugin: Optional[str] = None
 
 
 @dataclass
 class Files:
     inputs: List[Path]
     outputs: List[Path]
+
+
+def _check_bool(name: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise RuntimeError(f"hatch-protobuf: {name} must be true or false")
+    return value
+
+
+def _check_str(name: str, value: Any) -> str:
+    if not isinstance(value, str):
+        raise RuntimeError(f"hatch-protobuf: {name} must be a string")
+    return value
+
+
+def _check_str_opt(name: str, value: Any) -> Optional[str]:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise RuntimeError(f"hatch-protobuf: {name} must be a string")
+    return value
+
+
+def _check_list(name: str, value: Any) -> List[Any]:
+    if not isinstance(value, list):
+        raise RuntimeError(f"hatch-protobuf: {name} must be a list")
+    return value
+
+
+def _check_list_of_str(name: str, value: Any) -> List[str]:
+    list_val = _check_list(name, value)
+    for item in list_val:
+        if not isinstance(item, str):
+            raise RuntimeError(f"hatch-protobuf: {name} must be a list of strings")
+    return list_val
 
 
 class ProtocHook(BuildHookInterface):
@@ -52,7 +86,7 @@ class ProtocHook(BuildHookInterface):
         for path in self._proto_paths:
             args.append("--proto_path")
             args.append(path)
-        if self.config.get("import_site_packages", False):
+        if self._get_bool_conf("import_site_packages", False):
             args.append("--proto_path")
             args.append(get_path("purelib"))
         for generator in self._generators:
@@ -95,16 +129,25 @@ class ProtocHook(BuildHookInterface):
                 return "src"
         return "."
 
+    def _get_bool_conf(self, name: str, default: bool) -> bool:
+        return _check_bool(name, self.config.get(name, default))
+
+    def _get_str_conf(self, name: str, default: str) -> str:
+        return _check_str(name, self.config.get(name, default))
+
+    def _get_list_conf(self, name: str, default: List[Any]) -> List[Any]:
+        return _check_list(name, self.config.get(name, default))
+
+    def _get_list_of_str_conf(self, name: str, default: List[str]) -> List[str]:
+        return _check_list_of_str(name, self.config.get(name, default))
+
     @cached_property
     def _proto_paths(self) -> List[str]:
-        return self.config.get("proto_paths", [self._default_proto_path])
+        return self._get_list_of_str_conf("proto_paths", [self._default_proto_path])
 
     @cached_property
     def _generators(self) -> List[Generator]:
-        gen_grpc = self.config.get("generate_grpc", True)
-        gen_pyi = self.config.get("generate_pyi", True)
-
-        output_path = self.config.get("output_path", self._default_proto_path)
+        output_path = self._get_str_conf("output_path", self._default_proto_path)
 
         generators = [
             Generator(
@@ -113,7 +156,7 @@ class ProtocHook(BuildHookInterface):
                 output_path=Path(output_path),
             )
         ]
-        if gen_pyi:
+        if self._get_bool_conf("generate_pyi", True):
             generators.append(
                 Generator(
                     name="pyi",
@@ -121,7 +164,7 @@ class ProtocHook(BuildHookInterface):
                     output_path=Path(output_path),
                 )
             )
-        if gen_grpc:
+        if self._get_bool_conf("generate_grpc", True):
             generators.append(
                 Generator(
                     name="grpc_python",
@@ -130,13 +173,19 @@ class ProtocHook(BuildHookInterface):
                 )
             )
 
-        for g in self.config.get("generators", []):
+        for g in self._get_list_conf("generators", []):
             generators.append(
                 Generator(
-                    name=g["name"],
-                    outputs=g["outputs"],
-                    output_path=Path(g.get("output_path", output_path)),
-                    protoc_plugin=g.get("protoc_plugin", None),
+                    name=_check_str("generators.name", g["name"]),
+                    outputs=_check_list_of_str("generators.outputs", g["outputs"]),
+                    output_path=Path(
+                        _check_str(
+                            "generators.output_path", g.get("output_path", output_path)
+                        )
+                    ),
+                    protoc_plugin=_check_str_opt(
+                        "generators.protoc_plugin", g.get("protoc_plugin", None)
+                    ),
                 )
             )
 

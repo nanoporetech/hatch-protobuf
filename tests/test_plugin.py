@@ -43,7 +43,7 @@ def create_module_dir(path: Path) -> None:
     (path / "helloworld.proto").write_text(proto)
 
 
-def build_wheel(project: Path) -> None:
+def build_wheel(project: Path, capture_output: bool = False) -> None:
     """Run `hatch build` on the project."""
     subprocess.run(
         [
@@ -55,6 +55,8 @@ def build_wheel(project: Path) -> None:
         ],
         cwd=project,
         check=True,
+        text=True,
+        capture_output=capture_output,
     )
 
 
@@ -332,3 +334,31 @@ def test_input_dir_different_from_output_dir():
                 "helloworld_pb2.pyi",
                 "helloworld_pb2_grpc.py",
             }
+
+
+def test_bad_proto_paths():
+    """Check that setting incorrect proto_paths produces a sensible error."""
+    with tempfile.TemporaryDirectory() as project_dir_str:
+        project_dir = Path(project_dir_str)
+
+        with open(project_dir / "pyproject.toml", "w") as fobj:
+            fobj.write(PYPROJECT_HEADER)
+            fobj.write(
+                textwrap.dedent(
+                    f"""\
+                [tool.hatch.build.hooks.protobuf]
+                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
+                proto_paths = "/path/to/stuff"
+                output_path = "src"
+                """
+                )
+            )
+        (project_dir / ".gitignore").write_text(GITIGNORE)
+        create_module_dir(project_dir / "test_project")
+
+        try:
+            build_wheel(project_dir, capture_output=True)
+            # we expect an exception
+            assert False
+        except subprocess.CalledProcessError as e:
+            assert "proto_paths must be a list" in e.stderr
