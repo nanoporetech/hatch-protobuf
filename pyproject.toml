@@ -7,7 +7,7 @@ name = "hatch-protobuf"
 dynamic = ["version"]
 description = "A Hatch build plugin to generate Python files from Protocol Buffers .proto files"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = "MPL-2.0"
 authors = [
     {name = "Oxford Nanopore Technologies PLC", email = "info@nanoporetech.com"},
@@ -22,11 +22,11 @@ classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Software Development :: Code Generators",
 ]
@@ -63,4 +63,4 @@ test = "pytest -vv {args:tests}"
 profile = "black"
 
 [tool.black]
-target-version = ["py38", "py39", "py310", "py311", "py312"]
+target-version = ["py39", "py310", "py311", "py312", "py313"]
