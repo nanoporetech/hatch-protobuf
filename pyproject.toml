@@ -53,6 +53,7 @@ dependencies = [
 [tool.hatch.envs.default]
 dependencies = [
   "hatch",
+  "tomli-w",
   "pytest",
 ]
 
