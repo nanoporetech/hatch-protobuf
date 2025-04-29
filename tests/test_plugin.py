@@ -268,9 +268,9 @@ def test_src_subdir():
             for file in module_dir.iterdir():
                 if file.name.endswith(".py") or file.name.endswith(".pyi"):
                     for imp in get_imports(file):
-                        assert not imp.startswith("src."), (
-                            f"{file.name}: {imp} starts with 'src.'"
-                        )
+                        assert not imp.startswith(
+                            "src."
+                        ), f"{file.name}: {imp} starts with 'src.'"
 
 
 def test_input_dir_different_from_output_dir():
