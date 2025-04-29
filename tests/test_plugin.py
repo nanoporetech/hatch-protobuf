@@ -2,24 +2,31 @@ import importlib.resources
 import subprocess
 import sys
 import tempfile
-import textwrap
 import zipfile
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
+
+import tomli_w
 
 ROOT = Path(__file__).parent.parent
 
-PYPROJECT_HEADER = """\
-[project]
-name = "test-project"
-version = "0.0.1"
-dependencies = ["grpcio", "protobuf"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-"""
+PROJECT_TEMPLATE = {
+    "project": {
+        "name": "test-project",
+        "version": "0.0.1",
+        "dependencies": [
+            "grpcio",
+            "protobuf",
+        ],
+    },
+    "build-system": {
+        "requires": [
+            "hatchling",
+            f"hatch-protobuf @ {ROOT.as_uri()}",
+        ],
+        "build-backend": "hatchling.build",
+    },
+}
 
 GITIGNORE = """\
 *_pb2.py
@@ -35,12 +42,30 @@ COMMON_WHEEL_FILES = [
 ]
 
 
-def create_module_dir(path: Path) -> None:
-    """Create a directory containing __init__.py and the test helloworld.proto."""
-    path.mkdir(parents=True)
-    (path / "__init__.py").touch()
+def create_root_project_files(path: Path, hook_settings: Dict[str, Any]) -> None:
+    """Create a directory containing a pyproject.toml and a .gitignore."""
+    settings = PROJECT_TEMPLATE | {
+        "tool": {"hatch": {"build": {"hooks": {"protobuf": hook_settings}}}}
+    }
+    with (path / "pyproject.toml").open("wb") as f:
+        tomli_w.dump(settings, f)
+    print((path / "pyproject.toml").read_text())
+    (path / ".gitignore").write_text(GITIGNORE)
+
+
+def create_proto_dir(path: Path) -> None:
+    """Create a directory containing the test helloworld.proto."""
+    path.mkdir(parents=True, exist_ok=True)
     proto = importlib.resources.read_text("tests", "helloworld.proto")
     (path / "helloworld.proto").write_text(proto)
+
+
+def create_module_dir(path: Path, with_proto: bool) -> None:
+    """Create a directory containing __init__.py and (optionall) the test helloworld.proto."""
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "__init__.py").touch()
+    if with_proto:
+        create_proto_dir(path)
 
 
 def build_wheel(project: Path, capture_output: bool = False) -> None:
@@ -108,18 +133,8 @@ def test_basic_settings():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        create_module_dir(project_dir / "test_project")
+        create_root_project_files(project_dir, {})
+        create_module_dir(project_dir / "test_project", with_proto=True)
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -138,19 +153,8 @@ def test_no_grpc():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
-                generate_grpc = false
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        create_module_dir(project_dir / "test_project")
+        create_root_project_files(project_dir, {"generate_grpc": False})
+        create_module_dir(project_dir / "test_project", with_proto=True)
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -168,19 +172,8 @@ def test_no_pyi():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
-                generate_pyi = false
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        create_module_dir(project_dir / "test_project")
+        create_root_project_files(project_dir, {"generate_pyi": False})
+        create_module_dir(project_dir / "test_project", with_proto=True)
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -198,31 +191,24 @@ def test_custom_generator():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = [
-                    "hatch-protobuf @ {ROOT.as_uri()}",
-                    "mypy-protobuf~=3.0",
-                ]
-                generate_pyi = false
-
-                [[tool.hatch.build.hooks.protobuf.generators]]
-                name = "mypy"
-                outputs = ["{{proto_path}}/{{proto_name}}_pb2.pyi"]
-
-                [[tool.hatch.build.hooks.protobuf.generators]]
-                name = "mypy_grpc"
-                outputs = ["{{proto_path}}/{{proto_name}}_pb2_grpc.pyi"]
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        module_dir = project_dir / "test_project"
-        create_module_dir(module_dir)
+        create_root_project_files(
+            project_dir,
+            {
+                "dependencies": ["mypy-protobuf~=3.0"],
+                "generate_pyi": False,
+                "generators": [
+                    {
+                        "name": "mypy",
+                        "outputs": ["{proto_path}/{proto_name}_pb2.pyi"],
+                    },
+                    {
+                        "name": "mypy_grpc",
+                        "outputs": ["{proto_path}/{proto_name}_pb2_grpc.pyi"],
+                    },
+                ],
+            },
+        )
+        create_module_dir(project_dir / "test_project", with_proto=True)
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -245,31 +231,24 @@ def test_src_subdir():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = [
-                    "hatch-protobuf @ {ROOT.as_uri()}",
-                    "mypy-protobuf~=3.0",
-                ]
-                generate_pyi = false
-
-                [[tool.hatch.build.hooks.protobuf.generators]]
-                name = "mypy"
-                outputs = ["{{proto_path}}/{{proto_name}}_pb2.pyi"]
-
-                [[tool.hatch.build.hooks.protobuf.generators]]
-                name = "mypy_grpc"
-                outputs = ["{{proto_path}}/{{proto_name}}_pb2_grpc.pyi"]
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        module_dir = project_dir / "src" / "test_project"
-        create_module_dir(module_dir)
+        create_root_project_files(
+            project_dir,
+            {
+                "dependencies": ["mypy-protobuf~=3.0"],
+                "generate_pyi": False,
+                "generators": [
+                    {
+                        "name": "mypy",
+                        "outputs": ["{proto_path}/{proto_name}_pb2.pyi"],
+                    },
+                    {
+                        "name": "mypy_grpc",
+                        "outputs": ["{proto_path}/{proto_name}_pb2_grpc.pyi"],
+                    },
+                ],
+            },
+        )
+        create_module_dir(project_dir / "src" / "test_project", with_proto=True)
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -298,30 +277,15 @@ def test_input_dir_different_from_output_dir():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
-                proto_paths = ["protos"]
-                output_path = "src"
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-
-        module_dir = project_dir / "src" / "test_project"
-        module_dir.mkdir(parents=True)
-        (module_dir / "__init__.py").touch()
-
-        # NB: the "test_project" subdir is necessary otherwise protoc generates
-        # incorrect code
-        proto_dir = project_dir / "protos" / "test_project"
-        proto = importlib.resources.read_text("tests", "helloworld.proto")
-        proto_dir.mkdir(parents=True)
-        (proto_dir / "helloworld.proto").write_text(proto)
+        create_root_project_files(
+            project_dir,
+            {
+                "proto_paths": ["protos"],
+                "output_path": "src",
+            },
+        )
+        create_module_dir(project_dir / "src" / "test_project", with_proto=False)
+        create_proto_dir(project_dir / "protos" / "test_project")
 
         build_wheel(project_dir)
         with open_wheel(project_dir) as wheel:
@@ -341,20 +305,15 @@ def test_bad_proto_paths():
     with tempfile.TemporaryDirectory() as project_dir_str:
         project_dir = Path(project_dir_str)
 
-        with open(project_dir / "pyproject.toml", "w") as fobj:
-            fobj.write(PYPROJECT_HEADER)
-            fobj.write(
-                textwrap.dedent(
-                    f"""\
-                [tool.hatch.build.hooks.protobuf]
-                dependencies = ["hatch-protobuf @ {ROOT.as_uri()}"]
-                proto_paths = "/path/to/stuff"
-                output_path = "src"
-                """
-                )
-            )
-        (project_dir / ".gitignore").write_text(GITIGNORE)
-        create_module_dir(project_dir / "test_project")
+        create_root_project_files(
+            project_dir,
+            {
+                # this should be a list!
+                "proto_paths": "path/to/stuff",
+                "output_path": "src",
+            },
+        )
+        create_module_dir(project_dir / "test_project", with_proto=True)
 
         try:
             build_wheel(project_dir, capture_output=True)
