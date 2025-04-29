@@ -44,6 +44,7 @@ COMMON_WHEEL_FILES = [
 
 def create_root_project_files(path: Path, hook_settings: Dict[str, Any]) -> None:
     """Create a directory containing a pyproject.toml and a .gitignore."""
+    path.mkdir(parents=True, exist_ok=True)
     settings = PROJECT_TEMPLATE | {
         "tool": {"hatch": {"build": {"hooks": {"protobuf": hook_settings}}}}
     }
@@ -61,7 +62,7 @@ def create_proto_dir(path: Path) -> None:
 
 
 def create_module_dir(path: Path, with_proto: bool) -> None:
-    """Create a directory containing __init__.py and (optionall) the test helloworld.proto."""
+    """Create a directory containing __init__.py and (optionally) the test helloworld.proto."""
     path.mkdir(parents=True, exist_ok=True)
     (path / "__init__.py").touch()
     if with_proto:
@@ -321,3 +322,26 @@ def test_bad_proto_paths():
             assert False
         except subprocess.CalledProcessError as e:
             assert "proto_paths must be a list" in e.stderr
+
+
+def test_external_paths():
+    """Check that setting incorrect proto_paths produces a sensible error."""
+    with tempfile.TemporaryDirectory() as temp_dir_str:
+        parent_dir = Path(temp_dir_str)
+        project_dir = parent_dir / "project"
+
+        create_root_project_files(project_dir, {"proto_paths": ["../proto"]})
+        create_module_dir(project_dir / "test_project", with_proto=False)
+        create_proto_dir(parent_dir / "proto" / "test_project")
+
+        build_wheel(project_dir)
+        with open_wheel(project_dir) as wheel:
+            module_dir = get_module_dir(wheel)
+
+            assert {p.name for p in module_dir.iterdir()} == {
+                "__init__.py",
+                # NB: no .proto file!
+                "helloworld_pb2.py",
+                "helloworld_pb2.pyi",
+                "helloworld_pb2_grpc.py",
+            }
