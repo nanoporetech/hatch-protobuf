@@ -86,6 +86,9 @@ class ProtocHook(BuildHookInterface):
         for path in self._proto_paths:
             args.append("--proto_path")
             args.append(path)
+        for path in self._library_paths:
+            args.append("--proto_path")
+            args.append(path)
         if self._get_bool_conf("import_site_packages", False):
             args.append("--proto_path")
             args.append(get_path("purelib"))
@@ -144,6 +147,10 @@ class ProtocHook(BuildHookInterface):
     @cached_property
     def _proto_paths(self) -> List[str]:
         return self._get_list_of_str_conf("proto_paths", [self._default_proto_path])
+
+    @cached_property
+    def _library_paths(self) -> List[str]:
+        return self._get_list_of_str_conf("library_paths", [])
 
     @cached_property
     def _generators(self) -> List[Generator]:
