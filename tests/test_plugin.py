@@ -54,6 +54,13 @@ def create_root_project_files(path: Path, hook_settings: Dict[str, Any]) -> None
     (path / ".gitignore").write_text(GITIGNORE)
 
 
+def create_proto_dir_consumer(path: Path) -> None:
+    """Create a directory containing the test consumer.proto."""
+    path.mkdir(parents=True, exist_ok=True)
+    proto = importlib.resources.read_text("tests", "consumer.proto")
+    (path / "consumer.proto").write_text(proto)
+
+
 def create_proto_dir(path: Path) -> None:
     """Create a directory containing the test helloworld.proto."""
     path.mkdir(parents=True, exist_ok=True)
@@ -344,4 +351,35 @@ def test_external_paths():
                 "helloworld_pb2.py",
                 "helloworld_pb2.pyi",
                 "helloworld_pb2_grpc.py",
+            }
+
+
+def test_library_paths():
+    """Check that setting library_paths works."""
+    with tempfile.TemporaryDirectory() as temp_dir_str:
+        parent_dir = Path(temp_dir_str)
+        project_dir = parent_dir / "project"
+
+        create_root_project_files(
+            project_dir,
+            {
+                "proto_paths": ["protos"],
+                "library_paths": [str(Path("libs") / "lib1")],
+                "output_path": "src",
+            },
+        )
+        create_module_dir(project_dir / "src" / "test_project", with_proto=False)
+        create_proto_dir_consumer(project_dir / "protos" / "test_project")
+        create_proto_dir(project_dir / "libs" / "lib1" / "world")
+
+        build_wheel(project_dir)
+        with open_wheel(project_dir) as wheel:
+            module_dir = get_module_dir(wheel)
+
+            assert {p.name for p in module_dir.iterdir()} == {
+                "__init__.py",
+                # NB: no .proto file!
+                "consumer_pb2.py",
+                "consumer_pb2.pyi",
+                "consumer_pb2_grpc.py",
             }
