@@ -1,0 +1,9 @@
+syntax="proto3";
+
+package consumer;
+
+import "world/helloworld.proto";
+
+message WithDependency {
+  world.HelloRequest request = 1;
+}

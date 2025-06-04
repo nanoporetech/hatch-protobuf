@@ -19,9 +19,10 @@ section:
 | --- | ------- | ----------- |
 | `generate_grpc` | `true` | Whether to generate gRPC output files. |
 | `generate_pyi` | `true` | Whether to generate .pyi output files. Note that these are not generated for the gRPC output. You may want to use mypy-protobuf instead. |
-| `import_site_packages` | `false` | Adds your Python `site-packages` directory to `--proto_path`, so you can [`import` `.proto` files from installed Python packages](#include-proto-files-from-site-packages). This *does not* add individual `.proto` files in `site-packages` as arguments to `protoc`. |
+| `import_site_packages` | `false` | Adds your Python `site-packages` directory to `--proto_path`, so you can [`import` `.proto` files from installed Python packages](#import-proto-files-from-site-packages). This *does not* add individual `.proto` files in `site-packages` as arguments to `protoc`. |
 | `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. This does not follow symlinks. |
 | `output_path` | `"."` or `"src"` | The default output directory. This can be overridden on a per-generator basis for custom generators. |
+| `library_paths` | `[]` | Similar to `proto_paths`, but **without** building the `_pb2.py` files, allowing imports from `.proto`s not included in the Python `site-packages` directory. |
 
 Hatch-protobuf will guess whether to use "src" as the default input/output directory in
 a similar way to the [wheel builder][wheel-builder-defaults]. If
@@ -165,3 +166,15 @@ package, and stomp all over your `site-packages` directory.
 > *Editable* dependencies (eg: installed with `pip install -e` or using
 > [`uv` workspaces](https://docs.astral.sh/uv/concepts/projects/dependencies/#editable-dependencies))
 > use a different directory layout which can't be imported from by `protoc`.
+
+To consume Protocol Buffer definitions from published Python packages which
+include only `_pb2.py` files, `library_paths` can be set to the directory
+containing the `.proto` files.
+For example, You can add [opentelemetry-proto](https://github.com/open-telemetry/opentelemetry-proto)
+as a submodule in a project, and you will be able to import files from it after
+including the following config:
+
+```
+[tool.hatch.build.hooks.protobuf]
+library_paths = ["./libs/opentelemetry-proto"]
+```
