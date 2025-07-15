@@ -1,7 +1,7 @@
 import shlex
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from sysconfig import get_path
@@ -26,6 +26,10 @@ class Generator:
     """The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc.
     This is useful for plugins that are not installed in the Python environment."""
     protoc_plugin: Optional[str] = None
+
+    """Extra parameters to be passed to the protoc plugin.
+    (https://github.com/protocolbuffers/protobuf/pull/2284)"""
+    options: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -98,6 +102,8 @@ class ProtocHook(BuildHookInterface):
                     f"--plugin=protoc-gen-{generator.name}={generator.protoc_plugin}"
                 )
             args.append(f"--{generator.name}_out={generator.output_path}")
+            for option in generator.options:
+                args.append(f"--{generator.name}_opt={option}")
 
         args += [str(p) for p in self._files.inputs]  # cast to str for debug output
 
@@ -192,6 +198,9 @@ class ProtocHook(BuildHookInterface):
                     ),
                     protoc_plugin=_check_str_opt(
                         "generators.protoc_plugin", g.get("protoc_plugin", None)
+                    ),
+                    options=_check_list_of_str(
+                        "generators.options", g.get("options", [])
                     ),
                 )
             )

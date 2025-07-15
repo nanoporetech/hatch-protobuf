@@ -47,6 +47,7 @@ Options that can be set in generator sections:
 | `outputs` | required | A list of paths (relative to `output_path`). See below for more information. |
 | `output_path` | same as `output_path` from the main `protobuf` config section | Where to write generated files to. This is the value passed to the `--<name>_out` argument. |
 | `protoc_plugin` | `None` | The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc. This is useful for plugins that are not installed in the Python environment. |
+| `options` | `[]` | Extra parameters to be passed to the protoc plugin using [the `--<name>_opt` argument.][protobuf-pull-2284] |
 
 Each entry in the `outputs` field is a template that depends on the `.proto` file being
 processed. The string `{proto_name}` will be replaced with the base filename of each input .proto
@@ -64,6 +65,8 @@ outputs = ["{proto_path}/{proto_name}.ts"]
 output_path = "./frontend/src"
 protoc_plugin = "./frontend/node_modules/.bin/protoc-gen-ts_proto"
 ```
+
+[protobuf-pull-2284]: https://github.com/protocolbuffers/protobuf/pull/2284
 
 ### Mypy output
 
