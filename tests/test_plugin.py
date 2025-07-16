@@ -76,16 +76,21 @@ def create_module_dir(path: Path, with_proto: bool) -> None:
         create_proto_dir(path)
 
 
-def build_wheel(project: Path, capture_output: bool = False) -> None:
+def build_wheel(
+    project: Path, capture_output: bool = False, verbose: bool = False
+) -> subprocess.CompletedProcess:
     """Run `hatch build` on the project."""
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "hatch",
-            "build",
-            ".",
-        ],
+    args = [
+        sys.executable,
+        "-m",
+        "hatch",
+        "build",
+        ".",
+    ]
+    if verbose:
+        args.insert(3, "-v")
+    return subprocess.run(
+        args,
         cwd=project,
         check=True,
         text=True,
@@ -383,3 +388,29 @@ def test_library_paths():
                 "consumer_pb2.pyi",
                 "consumer_pb2_grpc.py",
             }
+
+
+def test_custom_generator_with_options():
+    """Check that the `options` parameter for custom generators is passed to protoc."""
+    with tempfile.TemporaryDirectory() as project_dir_str:
+        project_dir = Path(project_dir_str)
+
+        create_root_project_files(
+            project_dir,
+            {
+                "dependencies": ["mypy-protobuf~=3.0"],
+                "generate_pyi": False,
+                "generators": [
+                    {
+                        "name": "mypy",
+                        "outputs": ["{proto_path}/{proto_name}_pb2.pyi"],
+                        "options": ["foo=1", "bar=two"],
+                    },
+                ],
+            },
+        )
+        create_module_dir(project_dir / "test_project", with_proto=True)
+
+        result = build_wheel(project_dir, capture_output=True, verbose=True)
+        assert "--mypy_opt=foo=1" in result.stderr
+        assert "--mypy_opt=bar=two" in result.stderr
