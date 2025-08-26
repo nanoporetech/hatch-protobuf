@@ -93,7 +93,7 @@ outputs = ["{proto_path}/{proto_name}_pb2_grpc.pyi"]
 
 ### Import `.proto` files from `site-packages`
 
-Setting `include_site_packages = true` causes the plugin to add your current
+Setting `import_site_packages = true` causes the plugin to add your current
 `site-packages` directory as a `--proto_path` when running `protoc`, *without*
 trying to build a `_pb2.py` for *every* `.proto` file.
 
@@ -148,7 +148,7 @@ site-packages/google/api/
 ...
 ```
 
-Setting `include_site_packages = true` makes your generated code contain imports
+Setting `import_site_packages = true` makes your generated code contain imports
 that reference the already-built bindings, and not rebuild them:
 
 ```python
