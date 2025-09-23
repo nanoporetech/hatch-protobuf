@@ -21,7 +21,9 @@ jobs:
           # version shouldn't matter that much, but best to be consistent
           python-version: 3.12
       - name: Install build dependencies
-        run: python -m pip install --upgrade hatch
+        # See https://github.com/pallets/click/issues/3065
+        # and https://github.com/pypa/hatch/issues/2050
+        run: python -m pip install --upgrade hatch "click<8.3"
       - name: Build
         run: python -m hatch build
       - uses: actions/upload-artifact@v4
