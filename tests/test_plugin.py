@@ -342,7 +342,12 @@ def test_external_paths():
         parent_dir = Path(temp_dir_str)
         project_dir = parent_dir / "project"
 
-        create_root_project_files(project_dir, {"proto_paths": ["../proto"]})
+        # relative paths will only work with some build frontends
+        # (eg: it will work with hatch, but not with uv)
+        # it depends on whether the build is done in a temp dir
+        create_root_project_files(
+            project_dir, {"proto_paths": [str(parent_dir.resolve() / "proto")]}
+        )
         create_module_dir(project_dir / "test_project", with_proto=False)
         create_proto_dir(parent_dir / "proto" / "test_project")
 

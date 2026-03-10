@@ -215,8 +215,14 @@ class ProtocHook(BuildHookInterface):
         for path in map(Path, self._proto_paths):
             abs_path = self._root_path / path
             for proto in abs_path.glob("**/*.proto"):
-                # keep inputs relative to root directory, so as not to confuse protoc
-                inputs.append(proto.relative_to(self._root_path))
+                # protoc expects the path we give it to have the proto path as
+                # a prefix
+                if path.is_absolute():
+                    # proto will also be absolute
+                    # this is an unusual case, but let's try to handle it
+                    inputs.append(proto)
+                else:
+                    inputs.append(proto.relative_to(self._root_path))
                 rel_inputs.append(proto.relative_to(abs_path))
 
         patterns = [
