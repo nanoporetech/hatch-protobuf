@@ -41,6 +41,12 @@ dependencies = [
 [project.entry-points.hatch]
 protobuf = "hatch_protobuf.hooks"
 
+[dependency-groups]
+test = [
+  "tomli-w",
+  "pytest",
+]
+
 [tool.hatch.version]
 source = "vcs"
 
@@ -49,16 +55,6 @@ version-file = "src/hatch_protobuf/_version.py"
 dependencies = [
     "hatch-vcs",
 ]
-
-[tool.hatch.envs.default]
-dependencies = [
-  "hatch",
-  "tomli-w",
-  "pytest",
-]
-
-[tool.hatch.envs.default.scripts]
-test = "pytest -vv {args:tests}"
 
 [tool.isort]
 profile = "black"

@@ -1,6 +1,6 @@
 import importlib.resources
+import os
 import subprocess
-import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -81,20 +81,23 @@ def build_wheel(
 ) -> subprocess.CompletedProcess:
     """Run `hatch build` on the project."""
     args = [
-        sys.executable,
-        "-m",
-        "hatch",
+        "uv",
         "build",
+        "--refresh-package=hatch-protobuf",
         ".",
     ]
+    env = dict(os.environ)
+    env["HATCH_BUILD_CLEAN"] = "true"
     if verbose:
-        args.insert(3, "-v")
+        args.append("-v")
+        env["HATCH_VERBOSE"] = "1"
     return subprocess.run(
         args,
         cwd=project,
         check=True,
         text=True,
         capture_output=capture_output,
+        env=env,
     )
 
 
