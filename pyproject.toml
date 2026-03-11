@@ -56,5 +56,10 @@ dependencies = [
     "hatch-vcs",
 ]
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint]
+select = [
+    # Modernise Python code
+    "UP",     # pyupgrade
+    # Sort imports (isort)
+    "I",
+]

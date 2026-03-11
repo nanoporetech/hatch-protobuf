@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from sysconfig import get_path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
@@ -18,24 +18,24 @@ class Generator:
     name: str
 
     """Templates for paths that will be output, relative to ``output_path``."""
-    outputs: List[str]
+    outputs: list[str]
 
     """Where to write output files."""
     output_path: Path
 
     """The protoc plugin to use for this generator, if any. Will be passed as --plugin to protoc.
     This is useful for plugins that are not installed in the Python environment."""
-    protoc_plugin: Optional[str] = None
+    protoc_plugin: str | None = None
 
     """Extra parameters to be passed to the protoc plugin.
     (https://github.com/protocolbuffers/protobuf/pull/2284)"""
-    options: List[str] = field(default_factory=list)
+    options: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Files:
-    inputs: List[Path]
-    outputs: List[Path]
+    inputs: list[Path]
+    outputs: list[Path]
 
 
 def _check_bool(name: str, value: Any) -> bool:
@@ -50,7 +50,7 @@ def _check_str(name: str, value: Any) -> str:
     return value
 
 
-def _check_str_opt(name: str, value: Any) -> Optional[str]:
+def _check_str_opt(name: str, value: Any) -> str | None:
     if value is None:
         return value
     if not isinstance(value, str):
@@ -58,13 +58,13 @@ def _check_str_opt(name: str, value: Any) -> Optional[str]:
     return value
 
 
-def _check_list(name: str, value: Any) -> List[Any]:
+def _check_list(name: str, value: Any) -> list[Any]:
     if not isinstance(value, list):
         raise RuntimeError(f"hatch-protobuf: {name} must be a list")
     return value
 
 
-def _check_list_of_str(name: str, value: Any) -> List[str]:
+def _check_list_of_str(name: str, value: Any) -> list[str]:
     list_val = _check_list(name, value)
     for item in list_val:
         if not isinstance(item, str):
@@ -75,7 +75,7 @@ def _check_list_of_str(name: str, value: Any) -> List[str]:
 class ProtocHook(BuildHookInterface):
     PLUGIN_NAME = "protobuf"
 
-    def initialize(self, version: str, build_data: Dict[str, Any]) -> None:
+    def initialize(self, version: str, build_data: dict[str, Any]) -> None:
         if not self._files.outputs:
             # nothing to do
             return
@@ -112,7 +112,7 @@ class ProtocHook(BuildHookInterface):
 
         build_data["artifacts"] += [p.as_posix() for p in self._files.outputs]
 
-    def clean(self, versions: List[str]) -> None:
+    def clean(self, versions: list[str]) -> None:
         if not self._files.outputs:
             # nothing to do
             return
@@ -144,22 +144,22 @@ class ProtocHook(BuildHookInterface):
     def _get_str_conf(self, name: str, default: str) -> str:
         return _check_str(name, self.config.get(name, default))
 
-    def _get_list_conf(self, name: str, default: List[Any]) -> List[Any]:
+    def _get_list_conf(self, name: str, default: list[Any]) -> list[Any]:
         return _check_list(name, self.config.get(name, default))
 
-    def _get_list_of_str_conf(self, name: str, default: List[str]) -> List[str]:
+    def _get_list_of_str_conf(self, name: str, default: list[str]) -> list[str]:
         return _check_list_of_str(name, self.config.get(name, default))
 
     @cached_property
-    def _proto_paths(self) -> List[str]:
+    def _proto_paths(self) -> list[str]:
         return self._get_list_of_str_conf("proto_paths", [self._default_proto_path])
 
     @cached_property
-    def _library_paths(self) -> List[str]:
+    def _library_paths(self) -> list[str]:
         return self._get_list_of_str_conf("library_paths", [])
 
     @cached_property
-    def _generators(self) -> List[Generator]:
+    def _generators(self) -> list[Generator]:
         output_path = self._get_str_conf("output_path", self._default_proto_path)
 
         generators = [
