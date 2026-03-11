@@ -1,6 +1,6 @@
 import importlib.resources
+import os
 import subprocess
-import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -81,20 +81,23 @@ def build_wheel(
 ) -> subprocess.CompletedProcess:
     """Run `hatch build` on the project."""
     args = [
-        sys.executable,
-        "-m",
-        "hatch",
+        "uv",
         "build",
+        "--refresh-package=hatch-protobuf",
         ".",
     ]
+    env = dict(os.environ)
+    env["HATCH_BUILD_CLEAN"] = "true"
     if verbose:
-        args.insert(3, "-v")
+        args.append("-v")
+        env["HATCH_VERBOSE"] = "1"
     return subprocess.run(
         args,
         cwd=project,
         check=True,
         text=True,
         capture_output=capture_output,
+        env=env,
     )
 
 
@@ -342,7 +345,12 @@ def test_external_paths():
         parent_dir = Path(temp_dir_str)
         project_dir = parent_dir / "project"
 
-        create_root_project_files(project_dir, {"proto_paths": ["../proto"]})
+        # relative paths will only work with some build frontends
+        # (eg: it will work with hatch, but not with uv)
+        # it depends on whether the build is done in a temp dir
+        create_root_project_files(
+            project_dir, {"proto_paths": [str(parent_dir.resolve() / "proto")]}
+        )
         create_module_dir(project_dir / "test_project", with_proto=False)
         create_proto_dir(parent_dir / "proto" / "test_project")
 
