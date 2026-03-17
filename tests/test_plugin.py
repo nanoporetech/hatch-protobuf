@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import tomli_w
 
@@ -42,7 +42,7 @@ COMMON_WHEEL_FILES = [
 ]
 
 
-def create_root_project_files(path: Path, hook_settings: Dict[str, Any]) -> None:
+def create_root_project_files(path: Path, hook_settings: dict[str, Any]) -> None:
     """Create a directory containing a pyproject.toml and a .gitignore."""
     path.mkdir(parents=True, exist_ok=True)
     settings = PROJECT_TEMPLATE | {
@@ -120,7 +120,7 @@ def get_module_dir(wheel: zipfile.ZipFile) -> zipfile.Path:
     return root / "test_project"
 
 
-def get_imports(file: zipfile.Path) -> List[str]:
+def get_imports(file: zipfile.Path) -> list[str]:
     """Parses a Python file for its top-level imports.
 
     This uses heuristics and may get it wrong, but it's good enough for the tests.
@@ -283,9 +283,9 @@ def test_src_subdir():
             for file in module_dir.iterdir():
                 if file.name.endswith(".py") or file.name.endswith(".pyi"):
                     for imp in get_imports(file):
-                        assert not imp.startswith(
-                            "src."
-                        ), f"{file.name}: {imp} starts with 'src.'"
+                        assert not imp.startswith("src."), (
+                            f"{file.name}: {imp} starts with 'src.'"
+                        )
 
 
 def test_input_dir_different_from_output_dir():
