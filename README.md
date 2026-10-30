@@ -23,7 +23,7 @@ section:
 | `proto_paths` | `["."]` or `["src"]` | An array of paths to search for `.proto` files. Also passed as `--proto_path` arguments to `protoc`. This does not follow symlinks. |
 | `output_path` | `"."` or `"src"` | The default output directory. This can be overridden on a per-generator basis for custom generators. |
 | `library_paths` | `[]` | Similar to `proto_paths`, but **without** building the `_pb2.py` files, allowing imports from `.proto`s not included in the Python `site-packages` directory. |
-| `include_imports` | `false` | Whether protoc shopuld include all imports like the google standard `google.protobug.Timestamp` |
+| `include_imports` | `false` | Whether protoc should include all imports like the google standard `google.protobug.Timestamp` |
 
 Hatch-protobuf will guess whether to use "src" as the default input/output directory in
 a similar way to the [wheel builder][wheel-builder-defaults]. If
