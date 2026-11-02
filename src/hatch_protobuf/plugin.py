@@ -162,13 +162,17 @@ class ProtocHook(BuildHookInterface):
     def _generators(self) -> list[Generator]:
         output_path = self._get_str_conf("output_path", self._default_proto_path)
 
-        generators = [
-            Generator(
-                name="python",
-                outputs=["{proto_path}/{proto_name}_pb2.py"],
-                output_path=Path(output_path),
+        generators = []
+
+        if self._get_bool_conf("generate_py", True):
+            generators.append(
+                Generator(
+                    name="python",
+                    outputs=["{proto_path}/{proto_name}_pb2.py"],
+                    output_path=Path(output_path),
+                )
             )
-        ]
+
         if self._get_bool_conf("generate_pyi", True):
             generators.append(
                 Generator(

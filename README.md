@@ -17,6 +17,7 @@ section:
 
 | Key | Default | Description |
 | --- | ------- | ----------- |
+| `generate_py` | `true` | Whether to generate .py output files. Disable this if you want to use a custom python output (for example, betterproto). |
 | `generate_grpc` | `true` | Whether to generate gRPC output files. |
 | `generate_pyi` | `true` | Whether to generate .pyi output files. Note that these are not generated for the gRPC output. You may want to use mypy-protobuf instead. |
 | `import_site_packages` | `false` | Adds your Python `site-packages` directory to `--proto_path`, so you can [`import` `.proto` files from installed Python packages](#import-proto-files-from-site-packages). This *does not* add individual `.proto` files in `site-packages` as arguments to `protoc`. |
