@@ -199,6 +199,25 @@ def test_no_pyi():
             }
 
 
+def test_no_py():
+    """Check that turning off the generate_py option works."""
+    with tempfile.TemporaryDirectory() as project_dir_str:
+        project_dir = Path(project_dir_str)
+
+        create_root_project_files(project_dir, {"generate_py": False})
+        create_module_dir(project_dir / "test_project", with_proto=True)
+
+        build_wheel(project_dir)
+        with open_wheel(project_dir) as wheel:
+            module_dir = get_module_dir(wheel)
+
+            assert {p.name for p in module_dir.iterdir()} == {
+                *COMMON_WHEEL_FILES,
+                "helloworld_pb2.pyi",
+                "helloworld_pb2_grpc.py",
+            }
+
+
 def test_custom_generator():
     """Check that configurating a custom generator works."""
     with tempfile.TemporaryDirectory() as project_dir_str:
