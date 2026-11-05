@@ -93,6 +93,8 @@ class ProtocHook(BuildHookInterface):
         for path in self._library_paths:
             args.append("--proto_path")
             args.append(path)
+        if self._get_bool_conf("include_imports", False):
+            args.append("--include_imports")
         if self._get_bool_conf("import_site_packages", False):
             args.append("--proto_path")
             args.append(get_path("purelib"))
